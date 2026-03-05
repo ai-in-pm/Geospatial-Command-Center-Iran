@@ -1,0 +1,111 @@
+type Query {
+    recentEvents(limit: Int): [Event!]!
+    recentIncidents(limit: Int): [Incident!]!
+    allAlerts(limit: Int): [CopAlert!]!
+    latestSitrep: Sitrep
+    mapSnapshot: MapSnapshot!
+    agentHealth: [AgentStatus!]!
+    pipelineCycleCount: Int!
+    activeStrikes: [StrikeTrack!]!
+    strikeTimeline(limit: Int): [StrikeTrack!]!
+}
+
+type Event {
+    id: String!
+    latitude: Float!
+    longitude: Float!
+    timeStart: String!
+    timeEnd: String
+    type: String!
+    confidence: Float!
+    deceptionRisk: Float!
+    severity: String!
+    province: String
+    narrative: String!
+    pipelineStatus: String!
+    sourceCount: Int!
+}
+
+type Incident {
+    id: String!
+    latitude: Float!
+    longitude: Float!
+    timeWindowStart: String!
+    timeWindowEnd: String!
+    primaryType: String!
+    severity: String!
+    severityScore: Float!
+    mergedConfidence: Float!
+    mergedDeceptionRisk: Float!
+    geographicSpreadKm: Float!
+    province: String
+    narrative: String!
+    eventCount: Int!
+    actors: [String!]!
+    escalationIndicators: [String!]!
+    infrastructureImpact: String
+}
+
+type CopAlert {
+    priority: String!
+    incidentId: String
+    province: String
+    message: String!
+    confidence: Float!
+    severity: String!
+    issuedAt: String!
+}
+
+type Sitrep {
+    body: String!
+    issuedAt: String!
+    incidentCount: Int!
+    highSeverityCount: Int!
+}
+
+type MapSnapshot {
+    strikes: [GeoCoord!]!
+    droneStrikes: [GeoCoord!]!
+    missileStrikes: [GeoCoord!]!
+    fireHotspots: [GeoCoord!]!
+    seismicEvents: [GeoCoord!]!
+    protests: [GeoCoord!]!
+    maritimeIncidents: [GeoCoord!]!
+    totalIncidents: Int!
+}
+
+type StrikeTrack {
+    id: String!
+    weaponType: String!
+    category: String!
+    status: String!
+    originLat: Float!
+    originLon: Float!
+    targetLat: Float!
+    targetLon: Float!
+    currentLat: Float!
+    currentLon: Float!
+    altitudeM: Float!
+    speedKmh: Float!
+    heading: Float!
+    completionFraction: Float!
+    detectedAt: String!
+    estimatedImpactAt: String
+    confidence: Float!
+    dataQuality: String!
+    threatLevel: String!
+    targetProvince: String
+    originRegion: String!
+    narrative: String!
+}
+
+type GeoCoord {
+    lat: Float!
+    lon: Float!
+}
+
+type AgentStatus {
+    name: String!
+    healthy: Boolean!
+}
+

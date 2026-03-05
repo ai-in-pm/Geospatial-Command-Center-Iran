@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Geospatial Command Center — Iran OSINT Monitor</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#0a0f14;color:#b8c5d0;height:100vh;display:flex;flex-direction:column}
+header{background:#0d1b2a;border-bottom:1px solid #1e3a5f;padding:10px 18px;display:flex;align-items:center;gap:18px;flex-shrink:0}
+header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:uppercase}
+.badge{background:#1a2940;border:1px solid #1e3a5f;border-radius:3px;padding:3px 8px;font-size:11px;color:#64b5f6}
+.badge.green{border-color:#26a69a;color:#80cbc4}
+.badge.red{border-color:#ef5350;color:#ef9a9a}
+.badge.amber{border-color:#ffa726;color:#ffcc80}
+#map{flex:1;position:relative}
+#sidebar{position:absolute;top:10px;right:10px;bottom:370px;width:340px;
+  background:rgba(10,15,20,0.92);border:1px solid #1e3a5f;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:12px}
+#sidebar h3{font-size:11px;letter-spacing:2px;color:#4fc3f7;margin-bottom:8px;text-transform:uppercase;border-bottom:1px solid #1e3a5f;padding-bottom:6px}
+.incident-card{background:#0d1b2a;border-left:3px solid #1e3a5f;padding:8px;margin-bottom:6px;border-radius:2px;font-size:11px;cursor:pointer}
+.incident-card.CRITICAL{border-left-color:#ef5350}
+.incident-card.HIGH{border-left-color:#ffa726}
+.incident-card.MODERATE{border-left-color:#ffee58}
+.incident-card.LOW{border-left-color:#66bb6a}
+.inc-header{display:flex;justify-content:space-between;margin-bottom:4px}
+.inc-type{color:#4fc3f7;font-weight:bold;font-size:10px}
+.inc-sev{font-size:10px;padding:1px 5px;border-radius:2px;background:#1a2940}
+.inc-narr{color:#90a4ae;margin-top:4px;line-height:1.4}
+.inc-meta{color:#546e7a;font-size:10px;margin-top:3px}
+#legend{position:absolute;top:10px;right:355px;width:160px;max-height:calc(100% - 20px);overflow-y:auto;
+  background:rgba(10,15,20,0.9);border:1px solid #1e3a5f;border-radius:4px;
+  padding:6px 8px;z-index:1000;font-size:9px}
+#legend h4{color:#4fc3f7;margin-bottom:4px;font-size:9px;letter-spacing:1px;cursor:grab}
+#legend h4:active{cursor:grabbing}
+.leg-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;line-height:1.2}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#status-bar{background:#0d1b2a;border-top:1px solid #1e3a5f;padding:5px 18px;display:flex;gap:16px;font-size:10px;color:#546e7a;flex-shrink:0}
+#status-bar span{display:flex;align-items:center;gap:4px}
+.pulse{width:7px;height:7px;border-radius:50%;background:#26a69a;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+/* Strike watch panel */
+#strike-panel{position:absolute;top:10px;left:10px;width:300px;max-height:340px;
+  background:rgba(10,15,20,0.93);border:1px solid #b71c1c;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:10px}
+#strike-panel h3{font-size:10px;letter-spacing:2px;color:#ef5350;margin-bottom:6px;
+  text-transform:uppercase;border-bottom:1px solid #b71c1c;padding-bottom:5px;display:flex;justify-content:space-between}
+#strike-panel h3 .flash{animation:flashBlink 0.8s infinite}
+@keyframes flashBlink{0%,100%{opacity:1}50%{opacity:0}}
+.strike-card{background:#1a0a0a;border-left:3px solid #ef5350;padding:6px;margin-bottom:5px;border-radius:2px;font-size:10px}
+.strike-card.DRONE{border-left-color:#ff6d00}
+.strike-card.MISSILE{border-left-color:#d50000}
+.strike-card.INTERCEPTED{border-left-color:#69f0ae}
+.strike-card.IMPACT{border-left-color:#795548;opacity:0.7}
+.sk-header{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.sk-icon{font-size:12px}
+.sk-type{color:#ef9a9a;font-weight:bold;font-size:10px}
+.sk-status{margin-left:auto;padding:1px 4px;border-radius:2px;font-size:9px;background:#2d0a0a}
+.sk-narr{color:#90a4ae;line-height:1.35;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sk-meta{color:#546e7a;font-size:9px;margin-top:3px;display:flex;gap:8px}
+.sk-prog{height:2px;background:#b71c1c;border-radius:1px;margin-top:3px}
+.sk-prog-bar{height:100%;background:#ef5350;border-radius:1px;transition:width 1s linear}
+/* Naval Fleet panel */
+#fleet-panel{position:absolute;bottom:30px;left:10px;width:300px;max-height:300px;
+  background:rgba(10,15,20,0.93);border:1px solid #1a237e;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:10px}
+#fleet-panel h3{font-size:10px;letter-spacing:2px;color:#7986cb;margin-bottom:6px;
+  text-transform:uppercase;border-bottom:1px solid #1a237e;padding-bottom:5px;
+  display:flex;justify-content:space-between;align-items:center}
+.sh-card{background:#05081a;border-left:3px solid #283593;padding:6px;margin-bottom:4px;border-radius:2px;font-size:10px;cursor:pointer}
+.sh-card.HIGH_READINESS{border-left-color:#ef5350}
+.sh-card.ELEVATED{border-left-color:#ffa726}
+.sh-card.ROUTINE{border-left-color:#283593}
+.sh-head{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.sh-name{color:#9fa8da;font-weight:bold;font-size:10px}
+.sh-hull{color:#546e7a;font-size:9px;margin-left:auto}
+.sh-alert{font-size:9px;padding:1px 4px;border-radius:2px;background:#060b1e}
+.sh-meta{color:#546e7a;font-size:9px;margin-top:2px;display:flex;gap:7px;flex-wrap:wrap}
+.sh-reason{color:#ffa726;font-size:9px;margin-top:2px;font-style:italic}
+/* Airspace Live panel — anchored at bottom-right, BELOW the sidebar */
+#airspace-panel{position:absolute;bottom:30px;right:10px;width:330px;height:340px;
+  background:rgba(10,15,20,0.95);border:1px solid #0d47a1;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:10px}
+#airspace-panel h3{font-size:10px;letter-spacing:2px;color:#64b5f6;margin-bottom:6px;
+  text-transform:uppercase;border-bottom:1px solid #0d47a1;padding-bottom:5px;
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:-10px;background:rgba(10,15,20,0.97);z-index:2;padding-top:4px}
+.ac-card{background:#050d1a;border-left:3px solid #1565c0;padding:5px 6px;margin-bottom:3px;
+  border-radius:2px;font-size:10px;cursor:pointer;transition:background 0.15s}
+.ac-card:hover{background:#0a1929}
+.ac-card.CRITICAL{border-left-color:#ff1744}
+.ac-card.WARNING{border-left-color:#ff6d00}
+.ac-card.WATCH{border-left-color:#ffd740}
+.ac-card.ROUTINE{border-left-color:#1565c0}
+.ac-head{display:flex;align-items:center;gap:5px;margin-bottom:2px}
+.ac-cs{color:#90caf9;font-weight:bold;font-size:10px}
+.ac-cat{color:#546e7a;font-size:9px;margin-left:auto}
+.ac-alert{font-size:9px;padding:1px 4px;border-radius:2px;background:#0a1929}
+.ac-meta{color:#546e7a;font-size:9px;margin-top:2px;display:flex;flex-wrap:wrap;gap:6px}
+.ac-reason{font-size:9px;margin-top:2px;font-style:italic}
+/* Live dead-reckoned position readout row */
+.ac-pos{color:#37474f;font-size:8.5px;margin-top:3px;font-family:monospace;
+  letter-spacing:0.02em;border-top:1px solid #0d1a2e;padding-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Section headers inside airspace panel */
+.ac-section-hdr{font-size:9px;letter-spacing:1px;font-weight:bold;padding:3px 5px;
+  border-radius:2px;margin-bottom:4px;margin-top:6px;
+  position:sticky;top:28px;z-index:1;backdrop-filter:blur(2px)}
+.ac-section-hdr.uav{color:#ce93d8;background:rgba(206,147,216,0.15);border-left:2px solid #ce93d8}
+.ac-section-hdr.isr{color:#4dd0e1;background:rgba(77,208,225,0.15);border-left:2px solid #4dd0e1}
+.ac-section-hdr.mil{color:#ffa726;background:rgba(255,167,38,0.12);border-left:2px solid #ffa726}
+/* Pulse animation for UAV and ISR map icons */
+@keyframes acPulse{0%,100%{opacity:1;text-shadow:0 0 4px currentColor}50%{opacity:0.6;text-shadow:0 0 10px currentColor}}
+/* ── CIA / Intelligence Feed panel — bottom-center of map ─────────────────── */
+#intel-panel{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);width:480px;max-height:190px;
+  background:rgba(5,8,12,0.97);border:1px solid #b71c1c;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:8px 10px}
+#intel-panel h3{font-size:9px;letter-spacing:2px;color:#ff5252;margin-bottom:5px;
+  text-transform:uppercase;border-bottom:1px solid #4a0000;padding-bottom:4px;
+  display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:-8px;background:rgba(5,8,12,0.98);z-index:2;padding-top:3px}
+.intel-item{border-left:2px solid #4a0000;padding:4px 6px;margin-bottom:4px;
+  font-size:9px;line-height:1.4;background:#03050a;border-radius:1px}
+.intel-item.FLASH{border-left-color:#ff1744}
+.intel-item.IMMEDIATE{border-left-color:#ff6d00}
+.intel-item.PRIORITY{border-left-color:#ffd740}
+.intel-item.ROUTINE{border-left-color:#37474f}
+.intel-hdr{display:flex;gap:5px;align-items:baseline;margin-bottom:2px}
+.intel-pri{font-weight:bold;font-size:8px;padding:0 3px;border-radius:1px;background:#1a0000}
+.intel-pri.FLASH{color:#ff1744;background:#200000}
+.intel-pri.IMMEDIATE{color:#ff6d00;background:#1a0800}
+.intel-pri.PRIORITY{color:#ffd740;background:#1a1200}
+.intel-pri.ROUTINE{color:#546e7a}
+.intel-agency{color:#546e7a;font-size:8px}
+.intel-class{color:#ff5252;font-size:8px;font-family:monospace}
+.intel-text{color:#90a4ae}
+.intel-ts{color:#37474f;font-size:8px;margin-top:2px;font-family:monospace}
+@keyframes intelPulse{0%,100%{border-left-color:#ff1744}50%{border-left-color:#ff6d00}}
+.intel-item.FLASH{animation:intelPulse 1s infinite}
+/* ── Iran Nuclear Facilities ──────────────────────────────────────────────── */
+.nuclear-popup .leaflet-popup-content-wrapper{background:#050a05;border:1px solid #1b5e20;color:#a5d6a7}
+.nuclear-popup .leaflet-popup-tip{background:#1b5e20}
+/* Missile Launch Alert panel — below Strike Watch (top:360px) */
+#missile-panel{position:absolute;top:360px;left:10px;width:300px;max-height:230px;
+  background:rgba(10,5,5,0.95);border:1px solid #b71c1c;border-radius:4px;
+  overflow-y:auto;z-index:1000;padding:10px}
+#missile-panel h3{font-size:10px;letter-spacing:2px;color:#ff1744;margin-bottom:6px;
+  text-transform:uppercase;border-bottom:1px solid #b71c1c;padding-bottom:5px;
+  display:flex;justify-content:space-between;align-items:center}
+#missile-panel h3 .ml-count{font-size:10px;font-weight:bold}
+.ml-card{background:#1a0505;border-left:3px solid #ff1744;padding:6px;margin-bottom:5px;
+  border-radius:2px;font-size:10px;cursor:pointer}
+.ml-card.IN_FLIGHT{border-left-color:#ff6d00}
+.ml-card.TERMINAL_PHASE{border-left-color:#ff1744;animation:flashBlink 0.5s infinite}
+.ml-card.LAUNCH_DETECTED{border-left-color:#ffd740}
+.ml-card.INTERCEPTED{border-left-color:#69f0ae}
+.ml-card.IMPACT{border-left-color:#795548;opacity:0.7}
+.ml-head{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+.ml-sys{color:#ff8a80;font-weight:bold;font-size:10px}
+.ml-phase{margin-left:auto;padding:1px 4px;border-radius:2px;font-size:9px;background:#2d0000}
+.ml-narr{color:#90a4ae;line-height:1.35;margin-top:2px;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ml-meta{color:#546e7a;font-size:9px;margin-top:3px;display:flex;gap:7px;flex-wrap:wrap}
+.ml-prog{height:2px;background:#4a0a0a;border-radius:1px;margin-top:3px}
+.ml-prog-bar{height:100%;background:#ff1744;border-radius:1px;transition:width 1s linear}
+@keyframes mlPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,0.6)}50%{box-shadow:0 0 0 6px rgba(255,23,68,0)}}
+/* Custom zoom controls — sit immediately left of the #sidebar */
+#zoom-ctrl{position:absolute;top:10px;right:360px;z-index:1001;display:flex;flex-direction:column;gap:3px}
+#zoom-ctrl button{background:#0d1b2a;border:1px solid #1e3a5f;color:#4fc3f7;width:30px;height:30px;
+  font-size:18px;font-weight:bold;cursor:pointer;border-radius:3px;line-height:1;
+  display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;padding:0}
+#zoom-ctrl button:hover{background:#1a2940;border-color:#4fc3f7;color:#81d4fa}
+</style>
+</head>
+<body>
+<header>
+  <h1>⬡ Geospatial Command Center</h1>
+  <span class="badge">IRAN OSINT MONITOR</span>
+  <span class="badge amber" id="badge-cycle">Cycle: —</span>
+  <span class="badge green" id="badge-events">Events: 0</span>
+  <span class="badge red" id="badge-alerts">Alerts: 0</span>
+  <span class="badge" id="badge-airspace" style="border-color:#1565c0;color:#64b5f6">✈ — aircraft</span>
+  <span class="badge red" id="badge-missiles" style="border-color:#b71c1c;color:#ff8a80">🚀 — launches</span>
+  <span class="badge" id="badge-fleet" style="margin-left:auto;border-color:#1a237e;color:#7986cb">⚓ — vessels</span>
+  <span class="badge" id="badge-time" style="border-color:#263238;color:#546e7a"></span>
+</header>
+
+<div id="map">
+  <!-- Strike Watch Panel (top-left) -->
+  <div id="strike-panel">
+    <h3>⚡ STRIKE WATCH — LIVE <span class="flash" id="sw-count" style="color:#ef5350">0 ACTIVE</span></h3>
+    <div id="strike-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 6 scan…</div></div>
+  </div>
+
+  <!-- Zoom controls — positioned left of #sidebar -->
+  <div id="zoom-ctrl">
+    <button title="Zoom in"  onclick="map.zoomIn()">+</button>
+    <button title="Zoom out" onclick="map.zoomOut()">−</button>
+  </div>
+
+  <div id="sidebar">
+    <h3>▸ Active Incidents</h3>
+    <div id="incident-list"><div style="color:#546e7a;font-size:11px">Awaiting pipeline data…</div></div>
+    <h3 style="margin-top:12px">▸ Recent Alerts</h3>
+    <div id="alert-list"></div>
+  </div>
+  <!-- Missile Launch Alert Panel (below Strike Watch) -->
+  <div id="missile-panel">
+    <h3>🚀 MISSILE LAUNCH — IRAN <span class="ml-count flash" id="ml-count" style="color:#ff1744">0 ACTIVE</span></h3>
+    <div id="missile-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 9 scan…</div></div>
+  </div>
+  <!-- Naval Fleet Panel (bottom-left) -->
+  <div id="fleet-panel">
+    <h3>⚓ FLEET WATCH — NAVAL <span id="fl-count" style="color:#7986cb">0 VESSELS</span></h3>
+    <div id="fleet-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 8 scan…</div></div>
+  </div>
+  <!-- Airspace Live Panel (bottom-right, below sidebar) -->
+  <div id="airspace-panel">
+    <h3>✈ AIRSPACE LIVE — ADS-B <span id="as-count" style="color:#64b5f6">0 AC</span></h3>
+    <div id="airspace-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 7 scan…</div></div>
+  </div>
+
+  <!-- CIA / Intelligence Feed Panel (bottom-center) -->
+  <div id="intel-panel">
+    <h3>⬛ INTEL FEED — CIA/DIA/NSA
+      <span style="color:#546e7a;font-size:8px" id="intel-ts"></span>
+    </h3>
+    <div id="intel-list"><div style="color:#546e7a;font-size:9px">Initialising intelligence feed…</div></div>
+  </div>
+
+  <div id="legend">
+    <h4>MAP LAYERS</h4>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff6d00"></div>🛸 Drone Track (live)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#d50000"></div>🚀 Missile Track (live)</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ef5350"></div>Strike/Explosion</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ff9800"></div>Thermal Anomaly</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#ffeb3b"></div>Seismic Event</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#66bb6a"></div>Protest/Riot</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#29b6f6"></div>Maritime</div>
+    <div class="leg-row"><div class="leg-dot" style="background:#69f0ae"></div>Intercepted</div>
+    <hr style="border-color:#1e3a5f;margin:5px 0">
+    <div class="leg-row"><span style="color:#ce93d8;font-size:13px">🛸</span> UAV / Drone (ADS-B)</div>
+    <div class="leg-row"><span style="color:#4dd0e1;font-size:12px">👁</span> ISR / RECCE Platform</div>
+    <div class="leg-row"><span style="color:#ffa726;font-size:12px">✈</span> Military Aircraft</div>
+    <div class="leg-row"><span style="color:#ff1744;font-size:12px">✈</span> Aircraft — CRITICAL</div>
+    <div class="leg-row"><span style="color:#ff6d00;font-size:12px">✈</span> Aircraft — WARNING</div>
+    <div class="leg-row"><span style="color:#ffd740;font-size:12px">✈</span> Aircraft — WATCH</div>
+    <div class="leg-row"><span style="color:#29b6f6;font-size:12px">✈</span> Aircraft — ROUTINE</div>
+    <hr style="border-color:#1e3a5f;margin:5px 0">
+    <div class="leg-row"><span style="color:#ef5350;font-size:12px">⚓</span> Ship — HIGH READINESS</div>
+    <div class="leg-row"><span style="color:#ffa726;font-size:12px">⚓</span> Ship — ELEVATED</div>
+    <div class="leg-row"><span style="color:#7986cb;font-size:12px">⚓</span> Ship — ROUTINE</div>
+    <hr style="border-color:#1e3a5f;margin:5px 0">
+    <div class="leg-row"><span style="color:#69f0ae;font-size:12px">☢</span> Nuclear Facility</div>
+  </div>
+</div>
+
+<div id="status-bar">
+  <span><div class="pulse"></div> LIVE OSINT FEED</span>
+  <span id="sb-total-events">Total Events: 0</span>
+  <span id="sb-total-incidents">Total Incidents: 0</span>
+  <span id="sb-dedup">Dedup Registry: 0</span>
+  <span id="sb-agents">Agents: — </span>
+  <span id="sb-airspace">✈ Aircraft: 0</span>
+  <span id="sb-fleet">⚓ Vessels: 0</span>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+<script>
+(function(){
+  var el = document.getElementById('legend');
+  var hdr = el.querySelector('h4');
+  var dragging = false, ox = 0, oy = 0;
+  hdr.addEventListener('mousedown', function(e){
+    dragging = true;
+    var r = el.getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    el.style.transition = 'none';
+    /* switch to top/left absolute so drag is free-form */
+    el.style.top  = r.top  + 'px';
+    el.style.left = r.left + 'px';
+    el.style.right  = 'auto';
+    el.style.bottom = 'auto';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    el.style.left = (e.clientX - ox) + 'px';
+    el.style.top  = (e.clientY - oy) + 'px';
+  });
+  document.addEventListener('mouseup', function(){ dragging = false; });
+})();
+</script>
+</body>
+</html>
+

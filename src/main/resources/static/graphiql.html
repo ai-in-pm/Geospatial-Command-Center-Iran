@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GCC · GraphQL Explorer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Consolas,Monaco,monospace;background:#0d1117;color:#c9d1d9;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#hdr{background:#161b22;padding:10px 16px;border-bottom:2px solid #e94560;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#hdr h1{color:#e94560;font-size:15px;font-weight:700;letter-spacing:.5px}
+#hdr span{color:#8b949e;font-size:12px}
+#bar{background:#161b22;border-bottom:1px solid #30363d;padding:6px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0}
+select,button{font-family:inherit;font-size:12px;padding:4px 10px;border-radius:4px;cursor:pointer;border:1px solid #30363d}
+select{background:#21262d;color:#c9d1d9}
+#btn-run{background:#e94560;color:#fff;border-color:#e94560;font-weight:700;padding:5px 16px}
+#btn-run:hover{background:#c73652}
+#btn-clr{background:#21262d;color:#8b949e}
+#main{display:flex;flex:1;overflow:hidden}
+.pane{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.ph{background:#161b22;font-size:10px;color:#8b949e;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-bottom:1px solid #30363d;flex-shrink:0}
+textarea{flex:1;background:#0d1117;color:#c9d1d9;border:none;resize:none;padding:10px;font:13px Consolas,Monaco,monospace;outline:none;tab-size:2}
+#varpane{flex:0 0 90px;border-top:1px solid #30363d;display:flex;flex-direction:column}
+#divider{width:5px;background:#21262d;cursor:col-resize;flex-shrink:0}
+#result{flex:1;background:#0d1117;padding:10px;font-size:12px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+#statusbar{background:#161b22;border-top:1px solid #30363d;padding:3px 12px;font-size:11px;color:#8b949e;flex-shrink:0}
+.sk{color:#79b8ff}.ss{color:#9ecbff}.sn{color:#f0883e}.sb{color:#56d364}.sl{color:#8b949e}.er{color:#f85149}
+</style>
+</head>
+<body>
+<div id="hdr"><h1>⬡ GCC GraphQL Explorer</h1><span>Iran Conflict Monitoring — POST /graphql</span></div>
+<div id="bar">
+  <select id="sel"><option value="">── Sample Queries ──</option>
+    <option value="events">recentEvents</option><option value="incidents">recentIncidents</option>
+    <option value="alerts">allAlerts</option><option value="sitrep">latestSitrep</option>
+    <option value="map">mapSnapshot</option><option value="health">agentHealth</option>
+    <option value="cycle">pipelineCycleCount</option>
+  </select>
+  <button id="btn-run" onclick="run()">▶ Run  (Ctrl+↵)</button>
+  <button id="btn-clr" onclick="clr()">✕ Clear</button>
+</div>
+<div id="main">
+  <div class="pane">
+    <div class="ph">Query</div>
+    <textarea id="q" spellcheck="false"></textarea>
+    <div id="varpane"><div class="ph">Variables (JSON)</div>
+    <textarea id="v" spellcheck="false" style="flex:1" placeholder='{ "limit": 20 }'></textarea></div>
+  </div>
+  <div id="divider"></div>
+  <div class="pane"><div class="ph">Response</div>
+    <div id="result"><span class="sl">Run a query to see results.</span></div>
+  </div>
+</div>
+<div id="statusbar" id="sb">Ready · /graphql</div>
+<script>
+const S={
+events:`query RecentEvents($limit:Int){\n  recentEvents(limit:$limit){\n    id latitude longitude type severity\n    confidence deceptionRisk province narrative\n    pipelineStatus sourceCount timeStart timeEnd\n  }\n}`,
+incidents:`query RecentIncidents($limit:Int){\n  recentIncidents(limit:$limit){\n    id latitude longitude primaryType severity severityScore\n    mergedConfidence mergedDeceptionRisk geographicSpreadKm\n    province narrative eventCount actors\n    escalationIndicators infrastructureImpact\n    timeWindowStart timeWindowEnd\n  }\n}`,
+alerts:`query Alerts($limit:Int){\n  allAlerts(limit:$limit){\n    priority incidentId province message\n    confidence severity issuedAt\n  }\n}`,
+sitrep:`query{\n  latestSitrep{\n    body issuedAt incidentCount highSeverityCount\n  }\n}`,
+map:`query{\n  mapSnapshot{\n    totalIncidents\n    strikes{lat lon}\n    fireHotspots{lat lon}\n    seismicEvents{lat lon}\n    protests{lat lon}\n    maritimeIncidents{lat lon}\n  }\n}`,
+health:`query{\n  agentHealth{ name healthy }\n}`,
+cycle:`query{ pipelineCycleCount }`
+};
+document.getElementById('sel').onchange=function(){if(S[this.value]){document.getElementById('q').value=S[this.value];document.getElementById('v').value=['events','incidents','alerts'].includes(this.value)?'{"limit":20}':'';}this.value='';};
+document.getElementById('q').value=S.health;
+function st(m){document.getElementById('statusbar').textContent=m;}
+function clr(){document.getElementById('result').innerHTML='<span class="sl">Run a query to see results.</span>';st('Ready · /graphql');}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hi(j){return esc(j).replace(/("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,function(m){if(/^"/.test(m))return/:$/.test(m)?`<span class="sk">${m}</span>`:`<span class="ss">${m}</span>`;if(/true|false/.test(m))return`<span class="sb">${m}</span>`;if(/null/.test(m))return`<span class="sl">${m}</span>`;return`<span class="sn">${m}</span>`;});}
+async function run(){
+  const q=document.getElementById('q').value.trim();if(!q)return;
+  let v={};const vr=document.getElementById('v').value.trim();
+  if(vr){try{v=JSON.parse(vr);}catch(e){document.getElementById('result').innerHTML=`<span class="er">Variables parse error: ${esc(e.message)}</span>`;st('Error');return;}}
+  st('Executing…');const t=Date.now();
+  try{
+    const r=await fetch('/graphql',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query:q,variables:v})});
+    const j=await r.json();document.getElementById('result').innerHTML=hi(JSON.stringify(j,null,2));
+    st(`HTTP ${r.status} · ${Date.now()-t}ms · /graphql`);
+  }catch(e){document.getElementById('result').innerHTML=`<span class="er">Fetch error: ${esc(e.message)}</span>`;st('Error');}
+}
+document.getElementById('q').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();run();}});
+</script>
+</body>
+</html>
+
