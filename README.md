@@ -2,10 +2,12 @@
 
 A real-time, multi-agent OSINT intelligence platform built on **Spring Boot 3 + Kotlin** that ingests, geo-resolves, validates, fuses, and displays conflict events across Iran on a live interactive map.
 
-## Why build it
+https://github.com/user-attachments/assets/55cc45d0-f600-42f6-b2b0-51c0464d9801
 
+## Why build it
 This project exists to provide a single, unified command dashboard that aggregates open-source intelligence from disparate feeds (GDELT, ACLED, NASA FIRMS, USGS, ADS-B, AIS) into a correlated, confidence-scored, deception-aware operational picture — eliminating the need to manually monitor dozens of sources and enabling faster situational awareness for analysts.
 
+<img width="1920" height="1122" alt="GeoSpatialCommanCenter-Iran-3-4-2026" src="https://github.com/user-attachments/assets/be4bfa77-8acc-4f10-be84-5eb8aee58c15" />
 ---
 
 ## Architecture
