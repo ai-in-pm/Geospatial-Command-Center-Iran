@@ -2,12 +2,10 @@
 
 A real-time, multi-agent OSINT intelligence platform built on **Spring Boot 3 + Kotlin** that ingests, geo-resolves, validates, fuses, and displays conflict events across Iran on a live interactive map.
 
-https://github.com/user-attachments/assets/55cc45d0-f600-42f6-b2b0-51c0464d9801
-
 ## Why build it
+
 This project exists to provide a single, unified command dashboard that aggregates open-source intelligence from disparate feeds (GDELT, ACLED, NASA FIRMS, USGS, ADS-B, AIS) into a correlated, confidence-scored, deception-aware operational picture — eliminating the need to manually monitor dozens of sources and enabling faster situational awareness for analysts.
 
-<img width="1920" height="1122" alt="GeoSpatialCommanCenter-Iran-3-4-2026" src="https://github.com/user-attachments/assets/be4bfa77-8acc-4f10-be84-5eb8aee58c15" />
 ---
 
 ## Architecture
@@ -50,6 +48,8 @@ OSINT Sources → Agent 1 (Ingest) → Agent 2 (Geo-Resolve) → Agent 3 (Valida
 | CIA Intel Feed | Bottom-center | FLASH/IMMEDIATE/PRIORITY/ROUTINE intel items |
 | Map Layers | Draggable | Legend for all map markers — drag by title bar |
 
+All dashboard panels can be dragged and dropped anywhere on the interface by grabbing each panel title bar.
+
 ---
 
 ## Tech Stack
@@ -85,7 +85,71 @@ OSINT Sources → Agent 1 (Ingest) → Agent 2 (Geo-Resolve) → Agent 3 (Valida
 ./gradlew bootRun
 ```
 
-Open **http://localhost:8080** in your browser.
+Open **http://localhost:8081** in your browser.
+
+### Native Desktop Mode
+
+Run the native desktop shell instead of the browser-hosted workflow:
+
+```bash
+# Windows
+.\gradlew.bat desktopRun
+```
+
+The desktop shell starts the local Spring Boot backend automatically, waits for health readiness, and opens the Iran OSINT Monitor as a native desktop experience.
+
+---
+
+## Windows Desktop Packaging
+
+Build the native Windows launcher image:
+
+```bash
+.\gradlew.bat desktopPackageImage
+```
+
+Build the Windows installer:
+
+```bash
+.\gradlew.bat desktopPackageInstaller
+```
+
+Build both in one command:
+
+```bash
+.\gradlew.bat desktopPackage
+```
+
+Output locations:
+
+- Launcher image: `build/desktop/jpackage/image/Geospatial Command Center/`
+- Native launcher: `build/desktop/jpackage/image/Geospatial Command Center/Geospatial Command Center.exe`
+- Installer: `build/desktop/jpackage/installer/`
+
+Notes:
+
+- Packaging requires **Java 21** with the `jpackage` tool available in the selected JDK.
+- Building the installer additionally requires **WiX Toolset 3.x** (`candle.exe` and `light.exe`) on your `PATH`.
+- The packaged launcher always starts in desktop mode and boots the embedded local backend automatically.
+- If WiX is not installed yet, `desktopPackageImage` still produces a portable Windows launcher folder you can distribute directly.
+- Unsigned Windows installers may show a SmartScreen warning until code signing is added.
+
+---
+
+## Deployment
+
+- This app is now deployment-ready for Docker-compatible hosts.
+- Public platforms should inject `PORT`; locally it still defaults to `8081`.
+- Reverse proxy headers are enabled, and the H2 console is disabled by default.
+
+```bash
+docker build -t geospatialcommandcenter .
+docker run -e PORT=8081 -p 8081:8081 geospatialcommandcenter
+```
+
+Local container URL: `http://localhost:8081`
+
+After deploying the container, share the HTTPS URL assigned by your hosting provider.
 
 ---
 
@@ -99,6 +163,9 @@ Open **http://localhost:8080** in your browser.
 | `GEONAMES_USER` | Recommended | GeoNames geocoding username |
 | `AISHUB_USERNAME` | Optional | AISHub naval AIS data username |
 | `MARINETRAFFIC_API_KEY` | Optional | MarineTraffic extended API key |
+| `PORT` | Platform-provided | HTTP port used by the deployment platform |
+| `APP_LOG_LEVEL` | Optional | App log level, defaults to `INFO` |
+| `H2_CONSOLE_ENABLED` | Optional | Set to `true` only for trusted local debugging |
 
 Set as OS environment variables or pass via `application.properties`.
 
@@ -111,7 +178,7 @@ Set as OS environment variables or pass via `application.properties`.
 | `GET /` | Main command dashboard |
 | `POST /graphql` | GraphQL API (incidents, events, alerts, sitreps, strike tracks) |
 | `GET /actuator/health` | Health check |
-| `GET /h2-console` | H2 database console (`jdbc:h2:mem:gccdb`, user `SA`) |
+| `GET /h2-console` | H2 database console for trusted local debugging only when `H2_CONSOLE_ENABLED=true` |
 
 ---
 

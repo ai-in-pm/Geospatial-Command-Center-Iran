@@ -1353,7 +1353,75 @@ function renderIntelFeed() {
   if (tsEl) tsEl.textContent = new Date().toLocaleTimeString();
 }
 
+// ── Draggable dashboard panels ───────────────────────────────────────────────
+let topPanelZ = 1000;
+
+function normalizePanelPosition(panel, mapRect) {
+  const rect = panel.getBoundingClientRect();
+  panel.style.left = `${rect.left - mapRect.left}px`;
+  panel.style.top = `${rect.top - mapRect.top}px`;
+  panel.style.right = 'auto';
+  panel.style.bottom = 'auto';
+  panel.style.transform = 'none';
+}
+
+function initDraggablePanels() {
+  const mapEl = document.getElementById('map');
+  if (!mapEl) return;
+
+  const panels = mapEl.querySelectorAll('.draggable-panel');
+  panels.forEach(panel => {
+
+    const handle = panel.querySelector('.drag-handle') || panel;
+    let dragState = null;
+
+    const onPointerMove = (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      const nextLeft = event.clientX - dragState.mapLeft - dragState.offsetX;
+      const nextTop = event.clientY - dragState.mapTop - dragState.offsetY;
+
+      panel.style.left = `${nextLeft}px`;
+      panel.style.top = `${nextTop}px`;
+    };
+
+    const stopDrag = (event) => {
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      try { handle.releasePointerCapture(event.pointerId); } catch (_e) {}
+      panel.classList.remove('dragging-panel');
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', stopDrag);
+      window.removeEventListener('pointercancel', stopDrag);
+      dragState = null;
+    };
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+
+      const mapRect = mapEl.getBoundingClientRect();
+      normalizePanelPosition(panel, mapRect);
+      const panelRect = panel.getBoundingClientRect();
+
+      dragState = {
+        pointerId: event.pointerId,
+        mapLeft: mapRect.left,
+        mapTop: mapRect.top,
+        offsetX: event.clientX - panelRect.left,
+        offsetY: event.clientY - panelRect.top
+      };
+
+      panel.style.zIndex = String(++topPanelZ);
+      panel.classList.add('dragging-panel');
+      handle.setPointerCapture(event.pointerId);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', stopDrag);
+      window.addEventListener('pointercancel', stopDrag);
+      event.preventDefault();
+    });
+  });
+}
+
 // Boot: run all loops immediately then at their respective intervals
+initDraggablePanels();
 renderNuclearSites();
 renderIntelFeed();
 refresh();

@@ -15,6 +15,10 @@ header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:upperca
 .badge.red{border-color:#ef5350;color:#ef9a9a}
 .badge.amber{border-color:#ffa726;color:#ffcc80}
 #map{flex:1;position:relative}
+.draggable-panel{position:absolute}
+.drag-handle{cursor:grab;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+.dragging-panel{user-select:none}
 #sidebar{position:absolute;top:10px;right:10px;bottom:370px;width:340px;
   background:rgba(10,15,20,0.92);border:1px solid #1e3a5f;border-radius:4px;
   overflow-y:auto;z-index:1000;padding:12px}
@@ -32,8 +36,7 @@ header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:upperca
 #legend{position:absolute;top:10px;right:355px;width:160px;max-height:calc(100% - 20px);overflow-y:auto;
   background:rgba(10,15,20,0.9);border:1px solid #1e3a5f;border-radius:4px;
   padding:6px 8px;z-index:1000;font-size:9px}
-#legend h4{color:#4fc3f7;margin-bottom:4px;font-size:9px;letter-spacing:1px;cursor:grab}
-#legend h4:active{cursor:grabbing}
+#legend h4{color:#4fc3f7;margin-bottom:4px;font-size:9px;letter-spacing:1px}
 .leg-row{display:flex;align-items:center;gap:4px;margin-bottom:2px;line-height:1.2}
 .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 #status-bar{background:#0d1b2a;border-top:1px solid #1e3a5f;padding:5px 18px;display:flex;gap:16px;font-size:10px;color:#546e7a;flex-shrink:0}
@@ -188,8 +191,8 @@ header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:upperca
 
 <div id="map">
   <!-- Strike Watch Panel (top-left) -->
-  <div id="strike-panel">
-    <h3>⚡ STRIKE WATCH — LIVE <span class="flash" id="sw-count" style="color:#ef5350">0 ACTIVE</span></h3>
+  <div id="strike-panel" class="draggable-panel">
+    <h3 class="drag-handle">⚡ STRIKE WATCH — LIVE <span class="flash" id="sw-count" style="color:#ef5350">0 ACTIVE</span></h3>
     <div id="strike-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 6 scan…</div></div>
   </div>
 
@@ -199,38 +202,38 @@ header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:upperca
     <button title="Zoom out" onclick="map.zoomOut()">−</button>
   </div>
 
-  <div id="sidebar">
-    <h3>▸ Active Incidents</h3>
+  <div id="sidebar" class="draggable-panel">
+    <h3 class="drag-handle">▸ Active Incidents</h3>
     <div id="incident-list"><div style="color:#546e7a;font-size:11px">Awaiting pipeline data…</div></div>
     <h3 style="margin-top:12px">▸ Recent Alerts</h3>
     <div id="alert-list"></div>
   </div>
   <!-- Missile Launch Alert Panel (below Strike Watch) -->
-  <div id="missile-panel">
-    <h3>🚀 MISSILE LAUNCH — IRAN <span class="ml-count flash" id="ml-count" style="color:#ff1744">0 ACTIVE</span></h3>
+  <div id="missile-panel" class="draggable-panel">
+    <h3 class="drag-handle">🚀 MISSILE LAUNCH — IRAN <span class="ml-count flash" id="ml-count" style="color:#ff1744">0 ACTIVE</span></h3>
     <div id="missile-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 9 scan…</div></div>
   </div>
   <!-- Naval Fleet Panel (bottom-left) -->
-  <div id="fleet-panel">
-    <h3>⚓ FLEET WATCH — NAVAL <span id="fl-count" style="color:#7986cb">0 VESSELS</span></h3>
+  <div id="fleet-panel" class="draggable-panel">
+    <h3 class="drag-handle">⚓ FLEET WATCH — NAVAL <span id="fl-count" style="color:#7986cb">0 VESSELS</span></h3>
     <div id="fleet-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 8 scan…</div></div>
   </div>
   <!-- Airspace Live Panel (bottom-right, below sidebar) -->
-  <div id="airspace-panel">
-    <h3>✈ AIRSPACE LIVE — ADS-B <span id="as-count" style="color:#64b5f6">0 AC</span></h3>
+  <div id="airspace-panel" class="draggable-panel">
+    <h3 class="drag-handle">✈ AIRSPACE LIVE — ADS-B <span id="as-count" style="color:#64b5f6">0 AC</span></h3>
     <div id="airspace-list"><div style="color:#546e7a;font-size:10px">Awaiting Agent 7 scan…</div></div>
   </div>
 
   <!-- CIA / Intelligence Feed Panel (bottom-center) -->
-  <div id="intel-panel">
-    <h3>⬛ INTEL FEED — CIA/DIA/NSA
+  <div id="intel-panel" class="draggable-panel">
+    <h3 class="drag-handle">⬛ INTEL FEED — CIA/DIA/NSA
       <span style="color:#546e7a;font-size:8px" id="intel-ts"></span>
     </h3>
     <div id="intel-list"><div style="color:#546e7a;font-size:9px">Initialising intelligence feed…</div></div>
   </div>
 
-  <div id="legend">
-    <h4>MAP LAYERS</h4>
+  <div id="legend" class="draggable-panel">
+    <h4 class="drag-handle">MAP LAYERS</h4>
     <div class="leg-row"><div class="leg-dot" style="background:#ff6d00"></div>🛸 Drone Track (live)</div>
     <div class="leg-row"><div class="leg-dot" style="background:#d50000"></div>🚀 Missile Track (live)</div>
     <div class="leg-row"><div class="leg-dot" style="background:#ef5350"></div>Strike/Explosion</div>
@@ -268,32 +271,6 @@ header h1{font-size:15px;color:#4fc3f7;letter-spacing:2px;text-transform:upperca
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
-<script>
-(function(){
-  var el = document.getElementById('legend');
-  var hdr = el.querySelector('h4');
-  var dragging = false, ox = 0, oy = 0;
-  hdr.addEventListener('mousedown', function(e){
-    dragging = true;
-    var r = el.getBoundingClientRect();
-    ox = e.clientX - r.left;
-    oy = e.clientY - r.top;
-    el.style.transition = 'none';
-    /* switch to top/left absolute so drag is free-form */
-    el.style.top  = r.top  + 'px';
-    el.style.left = r.left + 'px';
-    el.style.right  = 'auto';
-    el.style.bottom = 'auto';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', function(e){
-    if(!dragging) return;
-    el.style.left = (e.clientX - ox) + 'px';
-    el.style.top  = (e.clientY - oy) + 'px';
-  });
-  document.addEventListener('mouseup', function(){ dragging = false; });
-})();
-</script>
 </body>
 </html>
 
