@@ -1,5 +1,7 @@
 # Geospatial Command Center — Iran OSINT Monitor
 
+<video src="https://github.com/ai-in-pm/Geospatial-Command-Center-Iran/releases/download/gcc-iran/GeoSpatial.Command.Center.-.Iran-3-4-2026.mp4" controls width="100%"></video>
+
 A real-time, multi-agent OSINT intelligence platform built on **Spring Boot 3 + Kotlin** that ingests, geo-resolves, validates, fuses, and displays conflict events across Iran on a live interactive map.
 
 ## Why build it
